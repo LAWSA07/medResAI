@@ -35,12 +35,7 @@ const OnboardingModal = ({ open, onClose, onSave }: OnboardingModalProps) => {
     role: ''
   });
 
-  const [errors, setErrors] = useState<{
-    name?: string;
-    phoneNumber?: string;
-    organization?: string;
-    role?: string;
-  }>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof ProfileData, string>>>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -63,12 +58,7 @@ const OnboardingModal = ({ open, onClose, onSave }: OnboardingModalProps) => {
   };
 
   const validateForm = (): boolean => {
-    const newErrors: {
-      name?: string;
-      phoneNumber?: string;
-      organization?: string;
-      role?: string;
-    } = {};
+    const newErrors: Partial<Record<keyof ProfileData, string>> = {};
 
     if (!profileData.name.trim()) {
       newErrors.name = 'Name is required';

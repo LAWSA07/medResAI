@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -11,7 +11,8 @@ import {
   InputAdornment,
   IconButton,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Link as MuiLink
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
@@ -123,7 +124,8 @@ const SignupPage = () => {
       // Show success message and redirect to login
       navigate('/login', {
         state: {
-          message: 'Registration successful! Please check your email to confirm your account before logging in.'
+          message:
+            'Registration successful! Please check your email to confirm your account before logging in.'
         }
       });
     } catch (error: any) {
@@ -159,7 +161,7 @@ const SignupPage = () => {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          minHeight: '100vh',
+          minHeight: '100vh'
         }}
       >
         <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
@@ -203,10 +205,13 @@ const SignupPage = () => {
               FormHelperTextProps={{
                 sx: {
                   color:
-                    passwordStrength === 'weak' ? 'error.main' :
-                    passwordStrength === 'medium' ? 'warning.main' :
-                    passwordStrength === 'strong' ? 'success.main' :
-                    'text.secondary'
+                    passwordStrength === 'weak'
+                      ? 'error.main'
+                      : passwordStrength === 'medium'
+                      ? 'warning.main'
+                      : passwordStrength === 'strong'
+                      ? 'success.main'
+                      : 'text.secondary'
                 }
               }}
               disabled={isSubmitting}
@@ -266,16 +271,23 @@ const SignupPage = () => {
                   <CircularProgress size={24} sx={{ mr: 1 }} />
                   Signing up...
                 </>
-              ) : 'Sign Up'}
+              ) : (
+                'Sign Up'
+              )}
             </Button>
 
             <Grid container justifyContent="flex-end">
               <Grid item>
-                <Link to="/login" style={{ textDecoration: 'none' }}>
+                <MuiLink
+                  component={RouterLink}
+                  to="/login"
+                  underline="none"
+                  sx={{ cursor: 'pointer' }}
+                >
                   <Typography variant="body2" color="primary">
                     Already have an account? Login
                   </Typography>
-                </Link>
+                </MuiLink>
               </Grid>
             </Grid>
           </Box>

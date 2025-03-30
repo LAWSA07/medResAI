@@ -59,7 +59,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     fetchUser();
 
     // Set up auth listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, _session) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         fetchUser();
       } else if (event === 'SIGNED_OUT') {
@@ -118,7 +120,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     login,
     logout,
     signup,
-    updateProfile
+    updateProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

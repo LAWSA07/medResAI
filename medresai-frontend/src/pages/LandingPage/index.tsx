@@ -10,7 +10,6 @@ import {
   CardContent,
   AppBar,
   Toolbar,
-  useMediaQuery,
   useTheme
 } from '@mui/material';
 import {
@@ -22,7 +21,6 @@ import {
 
 const LandingPage = () => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const features = [
     {
