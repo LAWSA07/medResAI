@@ -1,0 +1,78 @@
+:root {
+  font-family: 'Montserrat', system-ui, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light;
+  color: #212121;
+  background-color: #FAFAFA;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  font-weight: 500;
+  color: #4CAF50;
+  text-decoration: inherit;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: #388E3C;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+}
+
+h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 0.75rem;
+}
+
+button {
+  border-radius: 12px;
+  border: 1px solid transparent;
+  padding: 10px 22px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  background-color: #4CAF50;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  background-color: #388E3C;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+button:focus,
+button:focus-visible {
+  outline: 2px solid #4CAF50;
+  outline-offset: 2px;
+}
+
+#root {
+  width: 100%;
+}
