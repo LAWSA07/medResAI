@@ -3,9 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container,
   Typography,
-  Paper,
   Box,
   Grid,
+  GridProps as MuiGridProps,
   Button,
   Chip,
   CircularProgress,
@@ -27,9 +27,24 @@ import {
   DialogActions,
   TextField,
   Rating,
+  Theme
 } from '@mui/material';
+import { SxProps } from '@mui/system';
 import { ArrowBack as ArrowBackIcon, FileDownload as FileDownloadIcon, Share as ShareIcon, Star as StarIcon, StarBorder as StarBorderIcon } from '@mui/icons-material';
 import PredictionService, { PredictionJob, PredictionResult } from '../../../services/prediction.service';
+
+// Define proper interface for GridItem props
+interface GridItemProps extends Omit<MuiGridProps, 'item'> {
+  children: React.ReactNode;
+  sx?: SxProps<Theme>;
+}
+
+// Update the GridItem component with proper typing
+const GridItem = ({ children, ...props }: GridItemProps) => (
+  <Grid component="div" item {...props}>
+    {children}
+  </Grid>
+);
 
 interface PredictionJobDetail extends PredictionJob {
   results: PredictionResult[];
@@ -279,9 +294,9 @@ const PredictionDetailsPage = () => {
         Prediction Details
       </Typography>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={3} component="div">
         {/* Job Details Card */}
-        <Grid item xs={12} md={4}>
+        <GridItem xs={12} md={4}>
           <Card elevation={2}>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -321,10 +336,10 @@ const PredictionDetailsPage = () => {
               )}
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
 
         {/* Input Data Card */}
-        <Grid item xs={12} md={8}>
+        <GridItem xs={12} md={8}>
           <Card elevation={2}>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -346,10 +361,10 @@ const PredictionDetailsPage = () => {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
 
         {/* Results Table */}
-        <Grid item xs={12}>
+        <GridItem xs={12}>
           <Card elevation={2}>
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -432,7 +447,7 @@ const PredictionDetailsPage = () => {
               )}
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
       </Grid>
 
       {/* Share Dialog */}
