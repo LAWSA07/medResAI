@@ -17,6 +17,13 @@ import {
 } from '@mui/material';
 import { useAuth } from '../../../context/AuthContext';
 
+// Custom Grid component to avoid repetitive component prop
+const GridItem = ({ children, ...props }: any) => (
+  <Grid component="div" item {...props}>
+    {children}
+  </Grid>
+);
+
 const ProfilePage = () => {
   const { user, updateProfile, isLoading } = useAuth();
 
@@ -31,7 +38,6 @@ const ProfilePage = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Load user data when component mounts
   useEffect(() => {
     if (user) {
       setFormData({
@@ -58,13 +64,11 @@ const ProfilePage = () => {
     setError(null);
     setSuccess(null);
 
-    // Basic validation
     if (!formData.name.trim() || !formData.organization.trim() || !formData.role) {
       setError('Name, organization, and role are required');
       return;
     }
 
-    // Phone validation - optional but validated if provided
     if (formData.phone && !/^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/.test(formData.phone.trim())) {
       setError('Please enter a valid phone number');
       return;
@@ -119,8 +123,8 @@ const ProfilePage = () => {
         )}
 
         <Box component="form" onSubmit={handleSubmit}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
+          <Grid container spacing={3} component="div">
+            <GridItem xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Full Name"
@@ -130,9 +134,9 @@ const ProfilePage = () => {
                 disabled={isSubmitting}
                 required
               />
-            </Grid>
+            </GridItem>
 
-            <Grid item xs={12} sm={6}>
+            <GridItem xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Phone Number"
@@ -142,9 +146,9 @@ const ProfilePage = () => {
                 disabled={isSubmitting}
                 placeholder="+1 (123) 456-7890"
               />
-            </Grid>
+            </GridItem>
 
-            <Grid item xs={12}>
+            <GridItem xs={12}>
               <TextField
                 fullWidth
                 label="Organization"
@@ -154,9 +158,9 @@ const ProfilePage = () => {
                 disabled={isSubmitting}
                 required
               />
-            </Grid>
+            </GridItem>
 
-            <Grid item xs={12}>
+            <GridItem xs={12}>
               <FormControl fullWidth required>
                 <InputLabel id="role-select-label">Role</InputLabel>
                 <Select
@@ -173,9 +177,9 @@ const ProfilePage = () => {
                   <MenuItem value="ADMINISTRATOR">Administrator</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
+            </GridItem>
 
-            <Grid item xs={12}>
+            <GridItem xs={12}>
               <Button
                 type="submit"
                 variant="contained"
@@ -190,7 +194,7 @@ const ProfilePage = () => {
                   </>
                 ) : 'Save Changes'}
               </Button>
-            </Grid>
+            </GridItem>
           </Grid>
         </Box>
       </Paper>

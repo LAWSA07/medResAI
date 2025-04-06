@@ -14,13 +14,7 @@ import {
   Alert,
   CircularProgress,
   SelectChangeEvent,
-  LinearProgress,
-  TableContainer,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell
+  LinearProgress
 } from '@mui/material';
 import PredictionService, { PredictionJob, PredictionResult } from '../../../services/prediction.service';
 
