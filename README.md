@@ -1,5 +1,5 @@
 # MedResAI Project
-[🎥 Watch Demo Video](media/video.mp4)
+[🎥 Watch Demo Video](https://drive.google.com/file/d/1CO0qlZM3z_66IEOeaft6mSErikGP0w2m/view?usp=sharing)
 
 ## Executive Summary
 
