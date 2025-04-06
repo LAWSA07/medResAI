@@ -1,0 +1,33 @@
+name: medresai
+channels:
+  - pytorch
+  - nvidia
+  - huggingface
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - pip=23.0
+  - numpy=1.24.3
+  - pandas
+  - scipy
+  - pytorch=2.0.0
+  - torchvision
+  - cudatoolkit=11.8
+  - pip:
+    - transformers>=4.30.0
+    - accelerate>=0.20.0
+    - fastapi>=0.95.0
+    - uvicorn>=0.22.0
+    - pydantic>=1.10.0
+    - python-dotenv>=1.0.0
+    - safetensors>=0.3.1
+    - tqdm
+    - matplotlib
+    - scikit-learn
+    - bitsandbytes>=0.39.0
+    - protobuf
+    - peft>=0.4.0
+    - jupyter
+    - ipywidgets
+    - sentencepiece

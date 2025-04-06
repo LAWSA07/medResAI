@@ -1,231 +1,338 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
+  Button,
+  Card,
+  CircularProgress,
   Container,
+  FormControl,
+  Grid,
+  MenuItem,
+  Select,
+  TextField,
   Typography,
   Paper,
-  TextField,
-  Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Alert,
-  CircularProgress,
-  SelectChangeEvent,
+  Divider,
+  Chip,
+  Tooltip,
   LinearProgress
 } from '@mui/material';
-import PredictionService, { PredictionJob, PredictionResult } from '../../../services/prediction.service';
+import ScienceIcon from '@mui/icons-material/Science';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
+import PredictionService, { ModelStatus } from '../../../services/predictionService';
 
-type PageState = 'idle' | 'loading' | 'results' | 'error';
+// Prediction component
+export default function PredictPage() {
+  const [sequence, setSequence] = useState('');
+  const [selectedVirus, setSelectedVirus] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [modelStatus, setModelStatus] = useState<ModelStatus | null>(null);
+  const [checkingStatus, setCheckingStatus] = useState(false);
+  const [error, setError] = useState('');
+  const [result, setResult] = useState<any>(null);
+  const [maxOutputLength, setMaxOutputLength] = useState(200);
 
-const PredictPage = () => {
-  const [pageState, setPageState] = useState<PageState>('idle');
-  const [inputType, setInputType] = useState<PredictionJob['input_type']>('GENOME_TEXT');
-  const [inputData, setInputData] = useState<string>('');
-  const [error, setError] = useState<string | null>(null);
-  const [currentJob, setCurrentJob] = useState<PredictionJob | null>(null);
-  const [results, setResults] = useState<PredictionResult[]>([]);
-  const [pollingInterval, setPollingInterval] = useState<number | null>(null);
-  const navigate = useNavigate();
+  // Get example data
+  const exampleData = PredictionService.getExampleViralData();
 
-  // Clear polling interval on component unmount
+  // Load model status on component mount
   useEffect(() => {
-    return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
+    checkModelStatus();
+
+    // Check status every 30 seconds
+    const intervalId = setInterval(checkModelStatus, 30000);
+
+    // Clean up interval on unmount
+    return () => clearInterval(intervalId);
+  }, []);
+
+  // Function to check model status
+  const checkModelStatus = async () => {
+    try {
+      setCheckingStatus(true);
+      const status = await PredictionService.checkModelStatus();
+      setModelStatus(status);
+
+      // If model was in error, but now is ready, clear any errors
+      if (status.status === 'ready' && error && error.includes('model')) {
+        setError('');
       }
-    };
-  }, [pollingInterval]);
-
-  const handleInputTypeChange = (event: SelectChangeEvent<string>) => {
-    setInputType(event.target.value as PredictionJob['input_type']);
+    } catch (err) {
+      console.error('Failed to check model status:', err);
+    } finally {
+      setCheckingStatus(false);
+    }
   };
 
-  const handleInputDataChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setInputData(event.target.value);
+  // Handle virus selection
+  const handleVirusChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+    const virus = event.target.value as string;
+    setSelectedVirus(virus);
+
+    if (virus) {
+      // Load example sequence
+      const data = exampleData[virus as keyof typeof exampleData];
+      setSequence(data.sequence);
+    } else {
+      setSequence('');
+    }
   };
 
-  const startPrediction = async () => {
-    setError(null);
+  // Handle submission
+  const handleSubmit = async () => {
+    if (!sequence) {
+      setError('Please enter a genome sequence');
+      return;
+    }
 
-    // Validate input
-    if (!inputData.trim()) {
-      setError('Please enter genome sequence data');
+    if (sequence.length < 10) {
+      setError('Sequence is too short. Please enter at least 10 characters.');
       return;
     }
 
     try {
-      setPageState('loading');
-      const job = await PredictionService.startPrediction(inputType, inputData);
-      setCurrentJob(job);
+      setError('');
+      setLoading(true);
+      setResult(null);
 
-      // For demo purposes, simulate job progress
-      // In a real app, we would poll the server for status updates
-      const intervalId = window.setInterval(async () => {
-        try {
-          await PredictionService.simulateJobProgress(job.id);
-          const updatedJob = await PredictionService.getJobStatus(job.id);
-          setCurrentJob(updatedJob);
+      // Call prediction service with waiting for model option
+      const response = await PredictionService.predictAntiviral(sequence, {
+        maxLength: maxOutputLength,
+        waitForModel: true
+      });
 
-          if (updatedJob.status === 'COMPLETED') {
-            clearInterval(intervalId);
-            navigate(`/dashboard/prediction/${job.id}`);
-          } else if (updatedJob.status.includes('FAILED')) {
-            clearInterval(intervalId);
-            setError('Job processing failed. Please try again.');
-            setPageState('error');
-          }
-        } catch (error: any) {
-          clearInterval(intervalId);
-          setError(error.message || 'An error occurred while processing your prediction.');
-          setPageState('error');
-        }
-      }, 2000);
+      setResult(response);
 
-      setPollingInterval(intervalId);
-    } catch (error: any) {
-      setError(error.message || 'An error occurred while starting the prediction.');
-      setPageState('error');
+      // Refresh model status after prediction
+      checkModelStatus();
+    } catch (err: any) {
+      console.error('Prediction error:', err);
+      setError(err.message || 'Failed to get prediction');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const resetPrediction = () => {
-    setPageState('idle');
-    setError(null);
-    setCurrentJob(null);
-    setResults([]);
-    setInputData('');
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
-      setPollingInterval(null);
-    }
-  };
-
-  // Idle state - display input form
-  if (pageState === 'idle') {
-    return (
-      <Container maxWidth="md">
-        <Typography variant="h4" component="h1" gutterBottom>
-          Predict Antiviral Candidate
-        </Typography>
-
-        <Paper elevation={2} sx={{ p: 4, mt: 4 }}>
-          {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {error}
-            </Alert>
-          )}
-
-          <FormControl fullWidth sx={{ mb: 3 }}>
-            <InputLabel id="input-type-select-label">Input Type</InputLabel>
-            <Select
-              labelId="input-type-select-label"
-              id="input-type-select"
-              value={inputType}
-              label="Input Type"
-              onChange={handleInputTypeChange}
-            >
-              <MenuItem value="GENOME_TEXT">Genome Sequence (Text)</MenuItem>
-              <MenuItem value="VIRUS_ID">Virus Identifier</MenuItem>
-            </Select>
-          </FormControl>
-
-          <TextField
-            fullWidth
-            multiline
-            rows={6}
-            label={inputType === 'GENOME_TEXT' ? 'Genome Sequence' : 'Virus Identifier'}
-            placeholder={inputType === 'GENOME_TEXT'
-              ? 'Enter the genome sequence here...'
-              : 'Enter the virus identifier (e.g., SARS-CoV-2)'}
-            value={inputData}
-            onChange={handleInputDataChange}
-            sx={{ mb: 3 }}
+  // Render model status chip
+  const renderModelStatusChip = () => {
+    if (!modelStatus) {
+      return (
+        <Tooltip title="Checking model status...">
+          <Chip
+            label="Checking..."
+            icon={<HourglassEmptyIcon />}
+            color="default"
+            size="small"
+            sx={{ mb: 2 }}
           />
+        </Tooltip>
+      );
+    }
 
-          <Button
-            variant="contained"
-            size="large"
-            onClick={startPrediction}
-          >
-            Start Prediction
-          </Button>
-        </Paper>
-      </Container>
-    );
-  }
-
-  // Loading state - display progress
-  if (pageState === 'loading' && currentJob) {
-    return (
-      <Container maxWidth="md">
-        <Typography variant="h4" component="h1" gutterBottom>
-          Processing Prediction
-        </Typography>
-
-        <Paper elevation={2} sx={{ p: 4, mt: 4 }}>
-          <Typography variant="h6" gutterBottom>
-            Status: {currentJob.status.replace(/_/g, ' ')}
-          </Typography>
-
-          <Box sx={{ mb: 4 }}>
-            <LinearProgress
-              variant="determinate"
-              value={currentJob.progress_percentage}
-              sx={{ height: 10, borderRadius: 5 }}
+    switch (modelStatus.status) {
+      case 'ready':
+        return (
+          <Tooltip title="Model is loaded and ready">
+            <Chip
+              label="Model Ready"
+              icon={<CheckCircleIcon />}
+              color="success"
+              size="small"
+              sx={{ mb: 2 }}
             />
-            <Typography variant="body2" align="right" sx={{ mt: 1 }}>
-              {currentJob.progress_percentage}%
-            </Typography>
-          </Box>
+          </Tooltip>
+        );
+      case 'loading':
+        return (
+          <Tooltip title="Model is currently loading">
+            <Chip
+              label="Model Loading..."
+              icon={<HourglassEmptyIcon />}
+              color="warning"
+              size="small"
+              sx={{ mb: 2 }}
+            />
+          </Tooltip>
+        );
+      case 'error':
+        return (
+          <Tooltip title={modelStatus.last_error || 'Unknown error'}>
+            <Chip
+              label="Model Error"
+              icon={<ErrorIcon />}
+              color="error"
+              size="small"
+              sx={{ mb: 2 }}
+            />
+          </Tooltip>
+        );
+      default:
+        return (
+          <Tooltip title={`Model status: ${modelStatus.status}`}>
+            <Chip
+              label={`Model: ${modelStatus.status}`}
+              icon={<HourglassEmptyIcon />}
+              color="default"
+              size="small"
+              sx={{ mb: 2 }}
+            />
+          </Tooltip>
+        );
+    }
+  };
 
-          <Typography variant="body1" paragraph>
-            We're analyzing your input and generating antiviral candidates. This process may take a few minutes.
-          </Typography>
-
-          <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-            <CircularProgress size={60} />
-          </Box>
-        </Paper>
-      </Container>
-    );
-  }
-
-  // Error state - display error message
-  if (pageState === 'error') {
-    return (
-      <Container maxWidth="md">
-        <Typography variant="h4" component="h1" gutterBottom>
-          Prediction Error
-        </Typography>
-
-        <Paper elevation={2} sx={{ p: 4, mt: 4 }}>
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error || 'An error occurred while processing your prediction.'}
-          </Alert>
-
-          <Typography variant="body1" paragraph>
-            We encountered an issue while processing your prediction request. Please try again.
-          </Typography>
-
-          <Button variant="contained" onClick={resetPrediction}>
-            Try Again
-          </Button>
-        </Paper>
-      </Container>
-    );
-  }
-
-  // Fallback for unexpected state
   return (
-    <Container maxWidth="md">
-      <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
-        <CircularProgress />
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Typography variant="h4" gutterBottom>
+        Antiviral Drug Candidate Prediction
+      </Typography>
+
+      {/* Model Status */}
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+        {renderModelStatusChip()}
+        {checkingStatus && (
+          <CircularProgress size={16} sx={{ ml: 1 }} />
+        )}
+        <Button
+          variant="text"
+          size="small"
+          onClick={checkModelStatus}
+          disabled={checkingStatus}
+          sx={{ ml: 1 }}
+        >
+          Refresh
+        </Button>
       </Box>
+
+      <Grid container spacing={3}>
+        <Grid item xs={12}>
+          <Card sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Enter Genome Sequence
+            </Typography>
+
+            <FormControl fullWidth sx={{ mb: 3 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Select Example Virus (Optional)
+              </Typography>
+              <Select
+                value={selectedVirus}
+                onChange={handleVirusChange}
+                displayEmpty
+                sx={{ mb: 2 }}
+              >
+                <MenuItem value="">Select a virus</MenuItem>
+                <MenuItem value="sarsCoV2">SARS-CoV-2</MenuItem>
+                <MenuItem value="hbv">Hepatitis B Virus</MenuItem>
+                <MenuItem value="influenzaA">Influenza A Virus</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth sx={{ mb: 3 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Genome Sequence
+              </Typography>
+              <TextField
+                multiline
+                rows={6}
+                variant="outlined"
+                value={sequence}
+                onChange={(e) => setSequence(e.target.value)}
+                placeholder="Enter genome sequence..."
+                sx={{ mb: 2, fontFamily: 'monospace' }}
+              />
+            </FormControl>
+
+            <FormControl fullWidth sx={{ mb: 3 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Maximum Output Length
+              </Typography>
+              <TextField
+                type="number"
+                value={maxOutputLength}
+                onChange={(e) => setMaxOutputLength(Number(e.target.value))}
+                inputProps={{ min: 50, max: 1000 }}
+                sx={{ mb: 2 }}
+              />
+            </FormControl>
+
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+
+            {/* Model not ready warning */}
+            {modelStatus && modelStatus.status !== 'ready' && !error && (
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                The model is not ready yet ({modelStatus.status}). The prediction might take longer or fail.
+              </Alert>
+            )}
+
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <ScienceIcon />}
+              onClick={handleSubmit}
+              disabled={loading || !sequence}
+              sx={{ mb: 2 }}
+            >
+              {loading ? 'Processing...' : 'Generate Prediction'}
+            </Button>
+
+            {loading && (
+              <Box sx={{ mt: 2, mb: 2 }}>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Processing your request. This may take a minute...
+                </Typography>
+                <LinearProgress />
+              </Box>
+            )}
+          </Card>
+        </Grid>
+
+        {result && (
+          <Grid item xs={12}>
+            <Paper elevation={3} sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom color="primary">
+                Prediction Results
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+
+              <Typography variant="subtitle1" fontWeight="bold">
+                Input Sequence (truncated):
+              </Typography>
+              <Box sx={{ mb: 2, p: 1, bgcolor: 'grey.100', borderRadius: 1, fontFamily: 'monospace', fontSize: '0.8rem', overflow: 'auto' }}>
+                {result.input_sequence.substring(0, 100)}...
+              </Box>
+
+              <Typography variant="subtitle1" fontWeight="bold">
+                Prediction:
+              </Typography>
+              <Box sx={{ mb: 2, p: 1, bgcolor: 'grey.100', borderRadius: 1, whiteSpace: 'pre-wrap' }}>
+                {result.prediction}
+              </Box>
+
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Model: {result.model_version}
+                </Typography>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Generated at: {new Date(result.timestamp).toLocaleString()}
+                </Typography>
+                {result.prediction_time_seconds && (
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Processing time: {result.prediction_time_seconds} seconds
+                  </Typography>
+                )}
+              </Box>
+            </Paper>
+          </Grid>
+        )}
+      </Grid>
     </Container>
   );
-};
-
-export default PredictPage;
+}

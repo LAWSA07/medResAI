@@ -38,6 +38,7 @@ const AuthService = {
     });
 
     if (error) {
+      console.error("Signup error:", error.message);
       throw error;
     }
   },
@@ -52,6 +53,7 @@ const AuthService = {
     });
 
     if (error) {
+      console.error("Login error:", error.message);
       throw error;
     }
   },
@@ -63,6 +65,7 @@ const AuthService = {
     const { error } = await supabase.auth.signOut();
 
     if (error) {
+      console.error("Logout error:", error.message);
       throw error;
     }
   },
@@ -71,40 +74,51 @@ const AuthService = {
    * Get the currently logged in user's information
    */
   getCurrentUser: async (): Promise<User | null> => {
-    const { data: { user } } = await supabase.auth.getUser();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
+      if (!user) {
+        return null;
+      }
+
+      // Get additional user profile data from the profiles table
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 is for "no rows returned"
+        console.error("Profile fetch error:", error.message);
+        throw error;
+      }
+
+      return {
+        id: user.id,
+        email: user.email ?? '',
+        name: profileData?.name,
+        phone: profileData?.phone,
+        organization: profileData?.organization,
+        role: profileData?.role,
+        is_profile_complete: Boolean(profileData?.is_profile_complete)
+      };
+    } catch (error) {
+      console.error("Get current user error:", error);
       return null;
     }
-
-    // Get additional user profile data from the profiles table
-    const { data: profileData, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    if (error && error.code !== 'PGRST116') { // PGRST116 is for "no rows returned"
-      throw error;
-    }
-
-    return {
-      id: user.id,
-      email: user.email ?? '',
-      name: profileData?.name,
-      phone: profileData?.phone,
-      organization: profileData?.organization,
-      role: profileData?.role,
-      is_profile_complete: Boolean(profileData?.is_profile_complete)
-    };
   },
 
   /**
    * Check if the user is logged in
    */
   isLoggedIn: async (): Promise<boolean> => {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session !== null;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session !== null;
+    } catch (error) {
+      console.error("Auth check error:", error);
+      return false;
+    }
   },
 
   /**
@@ -134,6 +148,7 @@ const AuthService = {
       );
 
     if (error) {
+      console.error("Profile update error:", error.message);
       throw error;
     }
   }

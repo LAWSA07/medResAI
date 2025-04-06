@@ -1,229 +1,59 @@
-import supabase from './supabase';
+import axios from 'axios';
+
+const API_URL = 'http://localhost:8000/api/v1';
 
 export interface PredictionJob {
   id: string;
-  user_id: string;
+  input_sequence: string;
   status: string;
-  input_type: 'GENOME_TEXT' | 'GENOME_FILE' | 'VIRUS_ID';
-  input_data: string;
-  progress_percentage: number;
-  error_message: string | null;
+  result?: any;
+  error?: string;
   created_at: string;
-  updated_at: string;
-  completed_at: string | null;
+  updated_at?: string;
 }
 
-export interface PredictionResult {
-  id: string;
-  job_id: string;
-  rank: number;
-  candidate_sequence: string;
-  binding_score: number;
-  toxicity_score: number | null;
-  confidence_score: number | null;
-  created_at: string;
-}
-
-interface PredictionJobDetail extends PredictionJob {
-  results: PredictionResult[];
-}
-
-const PredictionService = {
-  /**
-   * Start a new prediction job
-   */
-  startPrediction: async (inputType: PredictionJob['input_type'], inputData: string): Promise<PredictionJob> => {
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-
-    const { data, error } = await supabase
-      .from('prediction_jobs')
-      .insert({
-        user_id: user.id,
-        input_type: inputType,
-        input_data: inputData,
-        status: 'PENDING'
-      })
-      .select()
-      .single();
-
-    if (error) {
+class PredictionService {
+  async submitPrediction(sequence: string): Promise<PredictionJob> {
+    try {
+      const response = await axios.post(`${API_URL}/predict/antiviral`, {
+        sequence: sequence
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error submitting prediction:', error);
       throw error;
     }
+  }
 
-    return data as PredictionJob;
-  },
-
-  /**
-   * Get prediction job status
-   */
-  getJobStatus: async (jobId: string): Promise<PredictionJob> => {
-    const { data, error } = await supabase
-      .from('prediction_jobs')
-      .select()
-      .eq('id', jobId)
-      .single();
-
-    if (error) {
+  async getPredictionStatus(jobId: string): Promise<PredictionJob> {
+    try {
+      const response = await axios.get(`${API_URL}/predict/antiviral/${jobId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error getting prediction status:', error);
       throw error;
     }
+  }
 
-    return data as PredictionJob;
-  },
+  async pollPredictionStatus(jobId: string, onUpdate: (job: PredictionJob) => void): Promise<void> {
+    const poll = async () => {
+      try {
+        const job = await this.getPredictionStatus(jobId);
+        onUpdate(job);
 
-  /**
-   * Get prediction results for a job
-   */
-  getJobResults: async (jobId: string): Promise<PredictionResult[]> => {
-    const { data, error } = await supabase
-      .from('prediction_results')
-      .select()
-      .eq('job_id', jobId)
-      .order('rank', { ascending: true });
-
-    if (error) {
-      throw error;
-    }
-
-    return data as PredictionResult[];
-  },
-
-  /**
-   * Get all user's prediction jobs
-   */
-  getUserJobs: async (): Promise<PredictionJob[]> => {
-    const { data, error } = await supabase
-      .from('prediction_jobs')
-      .select()
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      throw error;
-    }
-
-    return data as PredictionJob[];
-  },
-
-  /**
-   * Mock function to simulate job state transitions
-   * (This is a placeholder until the backend is implemented)
-   */
-  simulateJobProgress: async (jobId: string): Promise<void> => {
-    const states = [
-      'PENDING',
-      'PROCESSING_GENOME',
-      'ANALYZING_TARGETS',
-      'GENERATING_CANDIDATES',
-      'EVALUATING_CANDIDATES',
-      'RANKING_RESULTS',
-      'COMPLETED'
-    ];
-
-    const job = await PredictionService.getJobStatus(jobId);
-    const currentIndex = states.indexOf(job.status);
-
-    if (currentIndex < states.length - 1) {
-      const nextState = states[currentIndex + 1];
-      const progress = Math.min(Math.round(((currentIndex + 1) / (states.length - 1)) * 100), 100);
-
-      const completedAt = nextState === 'COMPLETED' ? new Date().toISOString() : null;
-
-      const { error } = await supabase
-        .from('prediction_jobs')
-        .update({
-          status: nextState,
-          progress_percentage: progress,
-          completed_at: completedAt,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', jobId);
-
-      if (error) {
+        if (job.status === 'pending' || job.status === 'processing') {
+          // Continue polling after 2 seconds
+          setTimeout(poll, 2000);
+        }
+      } catch (error) {
+        console.error('Error polling prediction status:', error);
         throw error;
       }
-
-      // If job is completed, generate mock results
-      if (nextState === 'COMPLETED') {
-        await PredictionService.generateMockResults(jobId);
-      }
-    }
-  },
-
-  /**
-   * Generate mock prediction results
-   * (This is a placeholder until the backend is implemented)
-   */
-  generateMockResults: async (jobId: string): Promise<void> => {
-    const mockResults = [
-      {
-        job_id: jobId,
-        rank: 1,
-        candidate_sequence: 'ATCGGAACTTGATCGGA',
-        binding_score: 0.94,
-        toxicity_score: 0.12,
-        confidence_score: 0.89
-      },
-      {
-        job_id: jobId,
-        rank: 2,
-        candidate_sequence: 'GCTATCGACTTGATCTA',
-        binding_score: 0.87,
-        toxicity_score: 0.18,
-        confidence_score: 0.82
-      },
-      {
-        job_id: jobId,
-        rank: 3,
-        candidate_sequence: 'ATAGGCTTCGAGGCTAA',
-        binding_score: 0.79,
-        toxicity_score: 0.09,
-        confidence_score: 0.76
-      }
-    ];
-
-    const { error } = await supabase
-      .from('prediction_results')
-      .insert(mockResults);
-
-    if (error) {
-      throw error;
-    }
-  },
-
-  async getJobDetails(jobId: string): Promise<PredictionJobDetail> {
-    // Check authentication
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Authentication required');
-
-    // Get the job
-    const { data: job, error: jobError } = await supabase
-      .from('prediction_jobs')
-      .select('*')
-      .eq('id', jobId)
-      .eq('user_id', user.id)
-      .single();
-
-    if (jobError) throw new Error(`Failed to fetch job: ${jobError.message}`);
-    if (!job) throw new Error('Job not found');
-
-    // Get the results
-    const { data: results, error: resultsError } = await supabase
-      .from('prediction_results')
-      .select('*')
-      .eq('job_id', jobId)
-      .order('rank', { ascending: true });
-
-    if (resultsError) throw new Error(`Failed to fetch results: ${resultsError.message}`);
-
-    // Return combined data
-    return {
-      ...job,
-      results: results || []
     };
-  }
-};
 
-export default PredictionService;
+    // Start polling
+    await poll();
+  }
+}
+
+export const predictionService = new PredictionService();

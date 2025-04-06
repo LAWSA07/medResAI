@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import supabase from '../../../services/supabase';
+import { Box, CircularProgress } from '@mui/material';
+import AuthService from '../../../services/auth.service';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -11,16 +12,33 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setIsAuthenticated(session !== null);
+      try {
+        const isLoggedIn = await AuthService.isLoggedIn();
+        setIsAuthenticated(isLoggedIn);
+      } catch (error) {
+        console.error('Error checking authentication:', error);
+        setIsAuthenticated(false);
+      }
     };
 
     checkAuth();
   }, []);
 
-  // Show nothing while checking authentication
+  // Show loading indicator while checking authentication
   if (isAuthenticated === null) {
-    return null;
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
+          bgcolor: 'background.default'
+        }}
+      >
+        <CircularProgress color="primary" />
+      </Box>
+    );
   }
 
   if (!isAuthenticated) {

@@ -23,7 +23,10 @@ import {
   Science as ScienceIcon,
   Handshake as HandshakeIcon,
   Settings as SettingsIcon,
-  Logout as LogoutIcon
+  Logout as LogoutIcon,
+  Biotech as BiotechIcon,
+  ViewQuilt as ViewQuiltIcon,
+  Science as PredictIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 
@@ -48,8 +51,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   };
 
   const menuItems = [
+    { text: 'Custom Dashboard', path: '/dashboard/custom', icon: <ViewQuiltIcon /> },
     { text: 'Predict Your Drug', path: '/dashboard/predict', icon: <DashboardIcon /> },
+    { text: 'Advanced Predictor', path: '/dashboard/predict-advanced', icon: <PredictIcon /> },
     { text: 'Prediction History', path: '/dashboard/history', icon: <HistoryIcon /> },
+    { text: 'Molecule Viewer', path: '/molecules', icon: <BiotechIcon /> },
     { text: 'Our Research', path: '/dashboard/work', icon: <ScienceIcon /> },
     { text: 'Our Sponsors', path: '/dashboard/sponsors', icon: <HandshakeIcon /> },
   ];

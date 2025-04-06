@@ -382,11 +382,11 @@ const WorkPage = () => {
                     </Link>
                   }
                   secondary={
-                    <React.Fragment>
+                    <Box component="div">
                       <Typography variant="body2" color="text.primary" sx={{ mb: 1 }}>
                         {pub.authors}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" color="text.secondary" component="div">
                         {pub.journal}, {pub.year}
                       </Typography>
                       <Box sx={{ mt: 1 }}>
@@ -417,7 +417,7 @@ const WorkPage = () => {
                           }}
                         />
                       </Box>
-                    </React.Fragment>
+                    </Box>
                   }
                 />
               </ListItem>

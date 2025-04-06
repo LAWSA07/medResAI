@@ -31,7 +31,7 @@ import {
 } from '@mui/material';
 import { SxProps } from '@mui/system';
 import { ArrowBack as ArrowBackIcon, FileDownload as FileDownloadIcon, Share as ShareIcon, Star as StarIcon, StarBorder as StarBorderIcon } from '@mui/icons-material';
-import PredictionService, { PredictionJob, PredictionResult } from '../../../services/prediction.service';
+import PredictionHistoryService, { PredictionJob, PredictionResult } from '../../../services/predictionHistoryService';
 
 // Define proper interface for GridItem props
 interface GridItemProps extends Omit<MuiGridProps, 'item'> {
@@ -81,15 +81,15 @@ const PredictionDetailsPage = () => {
   const fetchJobDetails = async (jobId: string) => {
     try {
       setLoading(true);
-      const details = await PredictionService.getJobDetails(jobId);
+      const details = await PredictionHistoryService.getJobDetails(jobId);
       setJobDetails(details);
 
       // If job is still processing, set up polling to check for updates
       if (details.status !== 'COMPLETED' && !details.status.includes('FAILED')) {
         const intervalId = window.setInterval(async () => {
           try {
-            await PredictionService.simulateJobProgress(jobId);
-            const updatedDetails = await PredictionService.getJobDetails(jobId);
+            await PredictionHistoryService.simulateJobProgress(jobId);
+            const updatedDetails = await PredictionHistoryService.getJobDetails(jobId);
             setJobDetails(updatedDetails);
 
             if (updatedDetails.status === 'COMPLETED' || updatedDetails.status.includes('FAILED')) {

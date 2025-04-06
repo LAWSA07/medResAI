@@ -22,6 +22,7 @@ import {
   Logout as LogoutIcon,
   Help as HelpIcon,
   Science as ScienceIcon,
+  Science as ChemistryIcon,
 } from '@mui/icons-material';
 
 const links = [
@@ -29,6 +30,7 @@ const links = [
   { name: 'Predictions', href: '/dashboard/predictions', icon: <AssessmentIcon /> },
   { name: 'History', href: '/dashboard/history', icon: <HistoryIcon /> },
   { name: 'Research', href: '/dashboard/research', icon: <ScienceIcon /> },
+  { name: 'Molecule Viewer', href: '/molecules', icon: <ChemistryIcon /> },
 ];
 
 const Sidebar = () => {

@@ -93,6 +93,15 @@ ipython_config.py
 *.joblib
 *.pickle
 models/
+# Specific large model directories
+medresai-backend/model/
+medresai-backend/models/
+**/model/checkpoints/
+**/model/saved_models/
+**/model/weights/
+**/model/pretrained/
+model/**/*.bin
+**/*.safetensors
 
 # Log files
 logs/

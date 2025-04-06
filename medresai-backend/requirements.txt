@@ -4,10 +4,17 @@ sqlalchemy==2.0.23
 pydantic==2.4.2
 python-dotenv==1.0.0
 # For Supabase integration
-httpx==0.25.1
-# Database drivers
-sqlalchemy[asyncio]
-# For PostgreSQL
-psycopg2-binary==2.9.9
+supabase-py==1.0.3
+python-jose[cryptography]==3.3.0
+httpx==0.24.1
+# ML dependencies
+torch==2.2.0
+transformers==4.38.1
+numpy==1.24.3
+accelerate==0.27.2
+bitsandbytes==0.42.0
+safetensors==0.4.2
+sentencepiece==0.2.0
+protobuf==4.25.3
 # For development
 pytest==7.4.3

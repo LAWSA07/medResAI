@@ -23,7 +23,7 @@ import {
   DialogActions,
 } from '@mui/material';
 import { CompareArrows as CompareIcon } from '@mui/icons-material';
-import PredictionService, { PredictionJob, PredictionResult } from '../../../services/prediction.service';
+import PredictionHistoryService, { PredictionJob, PredictionResult } from '../../../services/predictionHistoryService';
 
 const HistoryPage = () => {
   const [jobs, setJobs] = useState<PredictionJob[]>([]);
@@ -44,7 +44,7 @@ const HistoryPage = () => {
   const fetchJobs = async () => {
     try {
       setLoading(true);
-      const userJobs = await PredictionService.getUserJobs();
+      const userJobs = await PredictionHistoryService.getUserJobs();
       setJobs(userJobs);
       setError(null);
     } catch (error: any) {
@@ -113,7 +113,7 @@ const HistoryPage = () => {
       for (const jobId of selectedJobs) {
         const job = jobs.find(j => j.id === jobId);
         if (job && job.status === 'COMPLETED') {
-          const results = await PredictionService.getJobResults(jobId);
+          const results = await PredictionHistoryService.getJobResults(jobId);
           resultsMap.set(jobId, results);
         }
       }
