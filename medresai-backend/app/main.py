@@ -70,9 +70,9 @@ async def health_check():
 @app.on_event("startup")
 async def startup_event():
     try:
-        from app.ml.model_loader import model_service
+        from app.services.model_service import model_service
         logger.info("Preloading model...")
-        model_service.load_model()
+        # The real model is already initialized in the constructor
         logger.info("Model preloaded successfully")
     except Exception as e:
         logger.error(f"Error preloading model: {str(e)}")

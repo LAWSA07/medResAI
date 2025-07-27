@@ -2,11 +2,11 @@
 Prediction API endpoints.
 """
 from fastapi import APIRouter, HTTPException, BackgroundTasks
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 import logging
 
-from app.ml.model_loader import model_service
+from app.services.model_service import model_service
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -32,29 +32,41 @@ class PredictionResponse(BaseModel):
     """Response model for sequence prediction."""
     input_sequence: str
     prediction: str
-    model_version: str
+    ai_model_version: str
     timestamp: datetime
     prediction_time_seconds: float = None
+    
+    model_config = ConfigDict(protected_namespaces=())
 
 class StatusResponse(BaseModel):
     """Response model for model status."""
     status: str
     is_loading: bool
-    model_loaded: bool
-    tokenizer_loaded: bool
+    is_model_loaded: bool
+    is_tokenizer_loaded: bool
     last_error: str = None
     last_prediction_time: float = None
-    version: str = "DeepSeek-R1-Distill-Qwen-1.5B-finetuned"
+    ai_model_version: str = "DeepSeek-R1-Distill-Qwen-1.5B-finetuned"
+    
+    model_config = ConfigDict(protected_namespaces=())
 
 @router.get("/status", response_model=StatusResponse)
 async def get_model_status():
     """
     Get the current status of the model.
     """
-    status = model_service.status
+    # Check if model and tokenizer are loaded
+    model_loaded = model_service.model is not None
+    tokenizer_loaded = model_service.tokenizer is not None
+    
     return {
-        **status,
-        "version": "DeepSeek-R1-Distill-Qwen-1.5B-finetuned"
+        "status": "ready" if model_loaded and tokenizer_loaded else "loading",
+        "is_loading": False,
+        "is_model_loaded": model_loaded,
+        "is_tokenizer_loaded": tokenizer_loaded,
+        "last_error": None,
+        "last_prediction_time": None,
+        "ai_model_version": "DeepSeek-R1-Distill-Qwen-1.5B-finetuned"
     }
 
 @router.post("/virus", response_model=VirusQueryResponse)
@@ -132,24 +144,16 @@ async def predict_antiviral(request: SequenceRequest):
         )
 
     try:
-        # Generate prediction
-        result = model_service.predict(request.sequence, max_length=request.max_length)
-
-        if "error" in result:
-            logger.error(f"Prediction error: {result['error']}")
-            raise HTTPException(
-                status_code=500,
-                detail=f"Prediction error: {result['error']}",
-                headers={"X-Model-Status": result.get("status", "error")}
-            )
+        # Generate prediction using the real model
+        result = await model_service.predict_antiviral(request.sequence)
 
         # Return prediction response
         return PredictionResponse(
             input_sequence=result["input_sequence"],
             prediction=result["prediction"],
-            model_version=result["model_version"],
+            ai_model_version=result["model_version"],
             timestamp=datetime.now(),
-            prediction_time_seconds=result.get("prediction_time_seconds")
+            prediction_time_seconds=None  # Not provided by the real model
         )
     except HTTPException:
         # Re-raise HTTP exceptions
